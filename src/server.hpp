@@ -14,6 +14,7 @@ namespace http {
         struct sockaddr_in p_addr;
 
         void mainLoop(void);
+        [[nodiscard]] std::optional<std::string> getTextFile(const char *filename);
         [[nodiscard]] std::optional<ParsedData> parseData(const char *recievedData);
     };
 }

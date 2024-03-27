@@ -1,0 +1,16 @@
+body {
+    background-color: #3b3b3b;
+}
+
+h1, p{
+    color: white;
+    font-family: Verdana;
+}
+
+#container {
+    border: 1px solid lightgray;
+    height: 300px;
+    width: 40%;
+    margin: auto;
+    border-radius: 10px;
+}

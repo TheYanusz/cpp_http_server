@@ -43,14 +43,28 @@ namespace http {
             if (parseData(p_buffer).has_value()) {
                 data = parseData(p_buffer).value();
                 
-                printf("PARSED REQUEST:\nREQUEST TYPE: %s\nPROTOCOL: %s\nHOST ADDRESS: %s\nHOST PORT: %d\n", data.type.c_str(), data.protocol.c_str(), data.hostAddr.c_str(), data.hostPort);
+                printf("PARSED REQUEST:\nREQUEST TYPE: %s\nPROTOCOL: %s\nFILE: %s\nHOST ADDRESS: %s\nHOST PORT: %d\n", data.type.c_str(), data.protocol.c_str(), data.file.c_str() ,data.hostAddr.c_str(), data.hostPort);
                 std::cout << "SENDING RESPONSE" << std::endl;
-                std::string html = "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><title>Siema</title></head><body><h1>SIEMSON</h1></body></html>";
-                std::string response = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: ";
-                response += html.size();
-                response += "\n\n";
-                response += html;
+                std::string html;
+                std::string filename = ROOT_DIR+data.file; // TODO: Refactor this garbage
+                std::string response = "HTTP/1.1 200 OK\nContent-Type: text/"+data.filetype+"\nContent-Length: ";
+                if (data.file == "/") {
+                    html = "<!DOCTYPE html>\n<html><head><link rel=\"stylesheet\" href=\"style.css\"/><meta charset=\"utf-8\"><title>Siema</title></head><body><h1>SIEMSON</h1></body></html>";
+                    response += html.size();
+                    response += "\n\n";
+                    response += html;
+                }
+                else if (getTextFile(filename.c_str()).has_value()) {
+                    html = getTextFile(filename.c_str()).value();
+                    response += html.size();
+                    response += "\n\n";
+                    response += html;
+                } else if (!getTextFile(filename.c_str()).has_value()) {
+                    response = "HTTP/1.1 404";
+                }
+                
                 _ASSERT(write(p_acceptedSocket, response.c_str(), response.size()) != -1, "Unable to send response");
+                std::cout << response << std::endl;
             } else {
                 std::cout << "Recieved empty request" << std::endl;
             }
@@ -75,10 +89,34 @@ namespace http {
         for (int i = 0; ;i++) {
             if (trimmed == NULL) break;
             else if (i == 0) data.type = trimmed;
+            else if (i == 1) data.file = trimmed;
             else if (i == 2) data.protocol = trimmed;
             trimmed = strtok(NULL, " ");
         }
+        bool flag = false;
+        std::string filetype = "";
+        // TODO: unable to specify filetype
+        for (char c : firstLine) {
+            if (std::iswspace(c)) flag = false;
+            if (flag) filetype += c;
+
+            if (c == '.') flag = true;
+        }
+        filetype += '\n';
+        data.filetype = filetype;
 
         return data;
+    }
+
+    [[nodiscard]] std::optional<std::string> Server::getTextFile(const char *filename) {
+        std::ifstream file(filename);
+        if (!file.is_open()) return {};
+
+        std::string fromFile = "", line;
+        while (std::getline(file, line)) {
+            fromFile += line;
+        }
+
+        return fromFile;
     }
 }
