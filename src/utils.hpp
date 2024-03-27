@@ -14,6 +14,7 @@
 #include <string>
 #include <optional>
 #include <fstream>
+#include <filesystem>
 
 #define _ASSERT(x, ...) if (!(x)) { fprintf(stderr, "ASSERTION ERROR\nON: %s\nLINE: %d\nFILE: %s\nCOMMENT: %s\n", #x, __LINE__, __FILE__, __VA_ARGS__); exit(EXIT_FAILURE); }
 

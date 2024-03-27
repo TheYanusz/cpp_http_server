@@ -46,21 +46,34 @@ namespace http {
                 printf("PARSED REQUEST:\nREQUEST TYPE: %s\nPROTOCOL: %s\nFILE: %s\nHOST ADDRESS: %s\nHOST PORT: %d\n", data.type.c_str(), data.protocol.c_str(), data.file.c_str() ,data.hostAddr.c_str(), data.hostPort);
                 std::cout << "SENDING RESPONSE" << std::endl;
                 std::string html;
-                std::string filename = ROOT_DIR+data.file; // TODO: Refactor this garbage
+                std::string filename = ROOT_DIR+data.file; 
                 std::string response = "HTTP/1.1 200 OK\nContent-Type: text/"+data.filetype+"\nContent-Length: ";
-                if (data.file == "/") {
-                    html = "<!DOCTYPE html>\n<html><head><link rel=\"stylesheet\" href=\"style.css\"/><meta charset=\"utf-8\"><title>Siema</title></head><body><h1>SIEMSON</h1></body></html>";
+                if (data.file == "/" && data.type == "GET") {
+                    response = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: ";
+                    html = getTextFile("htdocs/servermainsite.html").value();
                     response += html.size();
                     response += "\n\n";
                     response += html;
                 }
-                else if (getTextFile(filename.c_str()).has_value()) {
+                else if (getTextFile(filename.c_str()).has_value() && data.type == "GET") {
                     html = getTextFile(filename.c_str()).value();
                     response += html.size();
                     response += "\n\n";
                     response += html;
                 } else if (!getTextFile(filename.c_str()).has_value()) {
-                    response = "HTTP/1.1 404";
+                    response = "HTTP/1.1 404\nContent-Type: text/html\nContent-Length: 90\n\n<html><head><title>404</title></head><body><h1>404</h1><p>File not found</p></body></html>";
+                } else if (data.type == "POST" && getTextFile(filename.c_str()).has_value()) {
+                    response = "HTTP/1.1 201 Created\nContent-Type: text/plain; charset=UTF-8\nContent-Length: ";
+                    html = getTextFile(filename.c_str()).value();
+                    response += html.size();
+                    response += "\n\n";
+                    response += html;
+                } else if (data.filetype == "dir") { // TODO: Not working
+                    response = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: ";
+                    html = createHTMLReposponseForDirectory(filename.c_str());
+                    response += html.size();
+                    response += "\n\n";
+                    response += html;
                 }
                 
                 _ASSERT(write(p_acceptedSocket, response.c_str(), response.size()) != -1, "Unable to send response");
@@ -93,18 +106,15 @@ namespace http {
             else if (i == 2) data.protocol = trimmed;
             trimmed = strtok(NULL, " ");
         }
-        bool flag = false;
-        std::string filetype = "";
-        // TODO: unable to specify filetype
-        for (char c : firstLine) {
-            if (std::iswspace(c)) flag = false;
-            if (flag) filetype += c;
-
-            if (c == '.') flag = true;
+        if (data.file.find(".css") != std::string::npos) {
+            data.filetype = "css";
+        } else if (data.file.find(".html") != std::string::npos) {
+            data.filetype = "html";
+        } else if (data.file.find(".js") != std::string::npos) {
+            data.filetype = "javascript";
+        } else {
+            data.filetype = "dir";
         }
-        filetype += '\n';
-        data.filetype = filetype;
-
         return data;
     }
 
@@ -118,5 +128,14 @@ namespace http {
         }
 
         return fromFile;
+    }
+
+    std::string Server::createHTMLReposponseForDirectory(const char *directory) {
+        std::string response = "<!DOCTYPE html><html><head><title>Directory</title></head><body><h1>Directory</h1><ul>";
+        for (const std::filesystem::__cxx11::directory_entry entry : std::filesystem::directory_iterator(directory)) {
+            response += "<li><a href=\"#\">"+entry.path().filename().string()+"</a></li>";
+        }
+        response += "</body></html>";
+        return response;
     }
 }

@@ -13,4 +13,6 @@ h1, p{
     width: 40%;
     margin: auto;
     border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15vh;
 }

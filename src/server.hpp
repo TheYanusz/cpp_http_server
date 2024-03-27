@@ -16,5 +16,7 @@ namespace http {
         void mainLoop(void);
         [[nodiscard]] std::optional<std::string> getTextFile(const char *filename);
         [[nodiscard]] std::optional<ParsedData> parseData(const char *recievedData);
+
+        std::string createHTMLReposponseForDirectory(const char *directory);
     };
 }
