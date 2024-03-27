@@ -53,8 +53,7 @@ namespace http {
 
     [[nodiscard]] std::optional<ParsedData> Server::parseData(const char *recievedData) {
         struct ParsedData data;
-        data.type = "GET";
-        data.protocol = "HTTP/1.1";
+        memset(&data, 0, sizeof(data));
         std::string recvData = recievedData;
         std::string firstLine = "";
         for (char c : recvData) {
@@ -68,6 +67,7 @@ namespace http {
             if (trimmed == NULL) break;
             else if (i == 0) data.type = trimmed;
             else if (i == 2) data.protocol = trimmed;
+            trimmed = strtok(NULL, " ");
         }
 
         return data;
