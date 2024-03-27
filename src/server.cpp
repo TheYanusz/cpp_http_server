@@ -18,8 +18,7 @@ namespace http {
 
         _ASSERT(listen(p_socket, 10) >= 0, "Error while listening");
 
-        p_acceptedSocket = accept(p_socket, (struct sockaddr*)&p_addr, (socklen_t*)&p_addrLen);
-        _ASSERT(p_acceptedSocket >= 0, "Unable to accept request");
+        
 
         printf("Listening on: %s:%d\nEntering main loop...\n", bindAddress, bindPort);
         mainLoop();
@@ -32,6 +31,8 @@ namespace http {
 
     void Server::mainLoop(void) {
         while (true) {
+            p_acceptedSocket = accept(p_socket, (struct sockaddr*)&p_addr, (socklen_t*)&p_addrLen);
+            _ASSERT(p_acceptedSocket >= 0, "Unable to accept request");
             int bytes_recieved = read(p_acceptedSocket, p_buffer, RECIEVE_BUFFER_SIZE);
             _ASSERT(bytes_recieved != -1, "Error recieving data");
             std::cout << bytes_recieved << " bytes recieved" << std::endl;
@@ -43,9 +44,17 @@ namespace http {
                 data = parseData(p_buffer).value();
                 
                 printf("PARSED REQUEST:\nREQUEST TYPE: %s\nPROTOCOL: %s\nHOST ADDRESS: %s\nHOST PORT: %d\n", data.type.c_str(), data.protocol.c_str(), data.hostAddr.c_str(), data.hostPort);
+                std::cout << "SENDING RESPONSE" << std::endl;
+                std::string html = "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><title>Siema</title></head><body><h1>SIEMSON</h1></body></html>";
+                std::string response = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: ";
+                response += html.size();
+                response += "\n\n";
+                response += html;
+                _ASSERT(write(p_acceptedSocket, response.c_str(), response.size()) != -1, "Unable to send response");
             } else {
                 std::cout << "Recieved empty request" << std::endl;
             }
+            close(p_acceptedSocket);
 
             memset(&p_buffer, '\0', RECIEVE_BUFFER_SIZE);
         }
